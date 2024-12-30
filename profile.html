@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trang cá nhân</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f9;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 3rem;
+      color: #2980b9;
+      margin-bottom: 20px;
+    }
+
+    .profile-details {
+      background-color: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+      text-align: center;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .profile-details img {
+      border-radius: 50%;
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      margin-bottom: 20px;
+    }
+
+    .profile-details p {
+      font-size: 1.2rem;
+      margin: 5px 0;
+      color: #555;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .form-group label {
+      font-size: 1.1rem;
+      color: #555;
+    }
+
+    input[type="text"], input[type="email"], input[type="password"], input[type="file"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+
+    input[type="file"] {
+      padding: 0;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 1.1rem;
+      color: white;
+      background-color: #2980b9;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+
+    button:hover {
+      background-color: #3498db;
+    }
+
+    button:active {
+      background-color: #1c6b9e;
+    }
+
+    .notification {
+      color: green;
+      font-size: 1.2rem;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .input-file {
+      margin-top: 10px;
+      text-align: left;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      width: 100%;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Trang cá nhân</h1>
+
+    <div class="profile-details">
+      <img id="profileImage" src="" alt="Ảnh đại diện">
+      <p id="username">Tên người dùng: </p>
+      <p id="email">Email: </p>
+      <p id="currentPoints">Số điểm hiện tại: 0</p>
+      <p id="totalBets">Tổng số lần cược: 0</p>
+      <button onclick="viewBetHistory()">Xem lịch sử cược</button>
+    </div>
+
+    <div class="form-group">
+      <label for="newUsername">Sửa tên người dùng:</label>
+      <input type="text" id="newUsername" placeholder="Nhập tên người dùng mới">
+    </div>
+
+    <div class="form-group">
+      <label for="newEmail">Sửa email:</label>
+      <input type="email" id="newEmail" placeholder="Nhập email mới">
+    </div>
+
+    <div class="form-group">
+      <label for="newPassword">Thay đổi mật khẩu:</label>
+      <input type="password" id="newPassword" placeholder="Mật khẩu mới">
+    </div>
+
+    <div class="input-file">
+      <label for="profilePic">Thay đổi ảnh đại diện:</label>
+      <input type="file" id="profilePic" accept="image/*">
+    </div>
+
+    <button onclick="updateProfile()">Cập nhật thông tin</button>
+    <button onclick="logout()">Đăng xuất</button>
+
+    <div class="notification" id="notification"></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBlhb-Z4jiXf7relUDZGcgRaFKF_kz0ts0",
+      authDomain: "baucua-49253.firebaseapp.com",
+      projectId: "baucua-49253",
+      storageBucket: "baucua-49253.firebasestorage.app",
+      messagingSenderId: "676265597911",
+      appId: "1:676265597911:web:d2f96446c9346ceef98992"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore(app);
+    const auth = firebase.auth(app);
+    const storage = firebase.storage(app);
+
+    let user = null;
+
+    function loadUserProfile() {
+      user = auth.currentUser;
+      if (user) {
+        const userId = user.uid;
+        db.collection('users').doc(userId).get()
+          .then((doc) => {
+            if (doc.exists) {
+              const userData = doc.data();
+              document.getElementById('username').innerText = `Tên người dùng: ${userData.username}`;
+              document.getElementById('email').innerText = `Email: ${userData.email}`;
+              document.getElementById('currentPoints').innerText = `Số điểm hiện tại: ${userData.points || 0}`;
+              document.getElementById('totalBets').innerText = `Tổng số lần cược: ${userData.totalBets || 0}`;
+              if (userData.profilePicUrl) {
+                document.getElementById('profileImage').src = userData.profilePicUrl;
+              }
+            }
+          })
+          .catch((error) => {
+            console.error("Lỗi lấy dữ liệu người dùng:", error);
+          });
+      }
+    }
+
+    function updateProfile() {
+      const newUsername = document.getElementById('newUsername').value;
+      const newEmail = document.getElementById('newEmail').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const profilePic = document.getElementById('profilePic').files[0];
+
+      if (newUsername || newEmail || newPassword || profilePic) {
+        const userId = user.uid;
+
+        const updatedData = {};
+        if (newUsername) updatedData.username = newUsername;
+        if (newEmail) updatedData.email = newEmail;
+        if (newPassword) {
+          user.updatePassword(newPassword).then(() => {
+            console.log("Mật khẩu đã được thay đổi");
+          }).catch((error) => {
+            console.error("Lỗi thay đổi mật khẩu:", error);
+            alert("Lỗi khi thay đổi mật khẩu.");
+          });
+        }
+
+        if (profilePic) {
+          const storageRef = storage.ref(`profile_pics/${userId}.jpg`);
+          const uploadTask = storageRef.put(profilePic);
+          
+          uploadTask.on('state_changed', 
+            function(snapshot) {}, 
+            function(error) { console.log(error); },
+            function() {
+              uploadTask.snapshot.ref.getDownloadURL().then(function(downloadURL) {
+                updatedData.profilePicUrl = downloadURL;
+                db.collection('users').doc(userId).update(updatedData).then(() => {
+                  alert('Cập nhật thông tin thành công!');
+                  loadUserProfile();
+                });
+              });
+            });
+        } else {
+          db.collection('users').doc(userId).update(updatedData).then(() => {
+            alert('Cập nhật thông tin thành công!');
+            loadUserProfile();
+          }).catch((error) => {
+            console.error("Lỗi cập nhật thông tin:", error);
+            alert('Lỗi khi cập nhật thông tin!');
+          });
+        }
+      } else {
+        alert('Vui lòng nhập thông tin mới!');
+      }
+    }
+
+    function viewBetHistory() {
+      alert('Chức năng xem lịch sử cược chưa được triển khai.');
+    }
+
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = 'login.html';
+      }).catch((error) => {
+        console.error("Lỗi đăng xuất:", error);
+      });
+    }
+
+    window.onload = loadUserProfile;
+  </script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trò chơi Bầu Cua Tôm Cá</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js"></script>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBlhb-Z4jiXf7relUDZGcgRaFKF_kz0ts0",
+      authDomain: "baucua-49253.firebaseapp.com",
+      projectId: "baucua-49253",
+      storageBucket: "baucua-49253.firebasestorage.app",
+      messagingSenderId: "676265597911",
+      appId: "1:676265597911:web:d2f96446c9346ceef98992"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore(app);
+    const auth = firebase.auth(app);
+
+    let userPoints = 100; // Điểm khởi tạo
+    let currentBet = 0; // Số điểm cược hiện tại
+    const options = ['Bầu', 'Cua', 'Tôm', 'Cá', 'Nai', 'Gà'];
+
+    // Hàm lấy điểm của người chơi từ Firestore
+    async function getUserPoints(userId) {
+      const userDoc = await db.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        return userDoc.data().points;
+      } else {
+        return 100; // Mặc định 100 điểm nếu không có dữ liệu
+      }
+    }
+
+    // Đặt cược
+    function placeBet() {
+      const betInput = document.getElementById('betAmount');
+      const betValue = parseInt(betInput.value);
+
+      if (betValue > 0 && betValue <= userPoints) {
+        currentBet = betValue;
+        alert(`Bạn đã đặt cược ${currentBet} điểm!`);
+      } else {
+        alert('Số điểm cược không hợp lệ!');
+      }
+    }
+
+    // Tung xúc xắc
+    function rollDice() {
+      if (currentBet <= 0) {
+        alert('Vui lòng đặt cược trước khi tung xúc xắc!');
+        return;
+      }
+
+      // Lấy kết quả ngẫu nhiên
+      const dice1 = options[Math.floor(Math.random() * options.length)];
+      const dice2 = options[Math.floor(Math.random() * options.length)];
+      const dice3 = options[Math.floor(Math.random() * options.length)];
+
+      document.getElementById('dice1').innerText = dice1;
+      document.getElementById('dice2').innerText = dice2;
+      document.getElementById('dice3').innerText = dice3;
+
+      // Xác suất thắng/thua (50%)
+      const isWin = Math.random() > 0.5;
+
+      if (isWin) {
+        userPoints += currentBet;
+        addHistory(`Thắng ${currentBet} điểm!`);
+        alert(`Bạn thắng! Điểm hiện tại: ${userPoints}`);
+      } else {
+        userPoints -= currentBet;
+        addHistory(`Thua ${currentBet} điểm!`);
+        alert(`Bạn thua! Điểm hiện tại: ${userPoints}`);
+      }
+
+      // Cập nhật Firestore
+      const userId = auth.currentUser.uid;
+      db.collection('users').doc(userId).update({
+        points: userPoints
+      });
+
+      // Cập nhật lại giao diện
+      currentBet = 0;
+      document.getElementById('betAmount').value = '';
+      document.getElementById('userPoints').innerText = userPoints;
+    }
+
+    // Thêm lịch sử cược
+    function addHistory(result) {
+      const historyList = document.getElementById('historyList');
+      const newHistory = document.createElement('p');
+      newHistory.innerText = result;
+      historyList.appendChild(newHistory);
+    }
+
+    // Tải dữ liệu khi trang được mở
+    window.onload = async () => {
+      const userId = auth.currentUser.uid;
+      userPoints = await getUserPoints(userId);
+      document.getElementById('userPoints').innerText = userPoints;
+    };
+  </script>
+
+  <style>
+    /* Cải tiến giao diện */
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #f39c12, #f1c40f);
+      font-family: 'Arial', sans-serif;
+      color: #2c3e50;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      color: #fff;
+      margin-bottom: 30px;
+      font-weight: 700;
+      text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .game-container {
+      margin-bottom: 30px;
+      text-align: center;
+      background-color: rgba(255, 255, 255, 0.85);
+      padding: 20px 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .game-container p {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .game-container input {
+      padding: 10px;
+      font-size: 1.2rem;
+      margin-top: 15px;
+      width: 100%;
+      border: 2px solid #27ae60;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    .game-container button {
+      padding: 10px 20px;
+      font-size: 1.5rem;
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 15px;
+    }
+
+    .game-container button:hover {
+      background-color: #2ecc71;
+      transform: scale(1.05);
+    }
+
+    .dice-container {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+
+    .dice {
+      width: 120px;
+      height: 120px;
+      border: 3px solid #2c3e50;
+      border-radius: 15px;
+      background-color: #ecf0f1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: bold;
+      color: #2980b9;
+      text-transform: uppercase;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #historyList {
+      margin-top: 30px;
+      font-size: 1.2rem;
+      color: #34495e;
+      text-align: center;
+      max-width: 80%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    #historyList p {
+      margin: 5px 0;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>Trò Chơi Bầu Cua</h1>
+  
+  <!-- Phần đặt cược -->
+  <div class="game-container">
+    <p>Điểm của bạn: <span id="userPoints">100</span></p>
+    <input type="number" id="betAmount" placeholder="Nhập số điểm cược" min="1">
+    <button onclick="placeBet()">Đặt Cược</button>
+  </div>
+
+  <!-- Phần xúc xắc -->
+  <div class="dice-container">
+    <div class="dice" id="dice1">?</div>
+    <div class="dice" id="dice2">?</div>
+    <div class="dice" id="dice3">?</div>
+  </div>
+
+  <!-- Nút tung xúc xắc -->
+  <button onclick="rollDice()">Tung Xúc Xắc</button>
+
+  <!-- Lịch sử cược -->
+  <div id="historyList">
+    <!-- Lịch sử cược sẽ được thêm vào đây -->
+  </div>
+</body>
+</html>

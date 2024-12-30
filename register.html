@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js"></script>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBlhb-Z4jiXf7relUDZGcgRaFKF_kz0ts0",
+      authDomain: "baucua-49253.firebaseapp.com",
+      projectId: "baucua-49253",
+      storageBucket: "baucua-49253.firebasestorage.app",
+      messagingSenderId: "676265597911",
+      appId: "1:676265597911:web:d2f96446c9346ceef98992"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore(app);
+    const auth = firebase.auth(app);
+
+    // Hàm đăng ký người dùng
+    function register() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const name = document.getElementById("name").value;
+
+      // Đăng ký tài khoản mới với Firebase Auth
+      auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          // Lấy thông tin người dùng
+          const user = userCredential.user;
+
+          // Lưu thông tin người dùng vào Firestore
+          db.collection("users").doc(user.uid).set({
+            name: name,
+            email: email,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          })
+          .then(() => {
+            alert("Đăng ký thành công!");
+            window.location.href = 'login.html'; // Chuyển hướng về trang đăng nhập
+          })
+          .catch((error) => {
+            alert("Lỗi khi lưu dữ liệu người dùng vào Firestore: " + error.message);
+          });
+        })
+        .catch((error) => {
+          alert("Đăng ký thất bại: " + error.message);
+        });
+    }
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trang Đăng Ký</title>
+  <style>
+    /* Style cơ bản */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f5f7f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 3rem;
+    }
+
+    .register-form {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      width: 300px;
+      text-align: center;
+    }
+
+    .register-form input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    .register-form button {
+      background-color: #2ba72f;
+      color: white;
+      font-size: 1.2rem;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .register-form button:hover {
+      background-color: #09a72d;
+    }
+
+    .register-form button:active {
+      background-color: #0cde0c;
+    }
+
+    .login-link {
+      margin-top: 15px;
+      font-size: 1rem;
+    }
+
+    .login-link a {
+      color: #2ba72f;
+      text-decoration: none;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Đăng Ký Người Dùng</h1>
+
+  <!-- Khung đăng ký -->
+  <div class="register-form">
+    <h2>Đăng ký tài khoản</h2>
+    <input type="text" id="name" placeholder="Họ tên" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Mật khẩu" required>
+    <button onclick="register()">Đăng ký</button>
+
+    <div class="login-link">
+      <p>Đã có tài khoản? <a href="login.html">Đăng nhập ngay</a></p>
+    </div>
+  </div>
+
+</body>
+</html>
